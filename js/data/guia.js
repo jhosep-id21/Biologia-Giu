@@ -1,9 +1,9 @@
 window.GUIA={
  trucos:[
-  ['✍️ Completar palabras','Lee la oración entera antes de escribir. Casi siempre falta un <b>término clave</b> del resumen (un organelo, un proceso, un autor). Si dudas, piensa: «¿qué palabra repetía la profesora en esta diapositiva?».'],
-  ['☑️ Marcar','Descarta primero las alternativas que sabes que son falsas. Cuidado con las parecidas: <b>mitosis / meiosis</b>, <b>ADN / ARN</b>, <b>procariota / eucariota</b>. Lee todas las opciones antes de marcar.'],
-  ['⚖️ Verdadero o falso','Desconfía de las palabras absolutas: <b>«siempre», «nunca», «solo», «todas»</b>. Y revisa que un dato esté en el lugar correcto (por ejemplo, la fotosíntesis ocurre en el cloroplasto, no en la mitocondria). Basta una parte falsa para que toda la frase sea falsa.'],
-  ['🔬 Casos científicos','No se trata de memorizar: se trata de <b>usar</b> lo que sabes para explicar una situación. Sigue siempre los 4 pasos de abajo y escribe en frases completas.']
+  ['Completar palabras','Lee la oración entera antes de escribir. Casi siempre falta un <b>término clave</b> del resumen (un organelo, un proceso, un autor). Si dudas, piensa: «¿qué palabra repetía la profesora en esta diapositiva?».'],
+  ['Marcar','Descarta primero las alternativas que sabes que son falsas. Cuidado con las parecidas: <b>mitosis / meiosis</b>, <b>ADN / ARN</b>, <b>procariota / eucariota</b>. Lee todas las opciones antes de marcar.'],
+  ['Verdadero o falso','Desconfía de las palabras absolutas: <b>«siempre», «nunca», «solo», «todas»</b>. Y revisa que un dato esté en el lugar correcto (por ejemplo, la fotosíntesis ocurre en el cloroplasto, no en la mitocondria). Basta una parte falsa para que toda la frase sea falsa.'],
+  ['Casos científicos','No se trata de memorizar: se trata de <b>usar</b> lo que sabes para explicar una situación. Sigue siempre los 4 pasos de abajo y escribe en frases completas.']
  ],
  metodo:[
   ['Lee y subraya las pistas','Lee el caso dos veces. Subraya <b>qué ocurre</b> (hechos) y <b>qué se pregunta</b>. Si hay varias situaciones, sepáralas (situación 1, situación 2).'],

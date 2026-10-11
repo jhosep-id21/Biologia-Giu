@@ -39,7 +39,7 @@ function confetti(){
 /* Cada una devuelve {el, grade()->{ok,total}}  */
 function makeCompletar(items,opts={}){
   const inputs=[],list=h('div',{class:'qlist'});
-  const answers=[];
+  const answers=[],cards=[];
   items.forEach((it,i)=>{
     const parts=it.split(/\{\{(.+?)\}\}/g);
     const p=h('p',{class:'q cloze'});
@@ -51,7 +51,7 @@ function makeCompletar(items,opts={}){
     });
     const card=h('div',{class:'qcard'},h('span',{class:'qn'},i+1),p);
     inputs.filter(x=>!x.card).forEach(x=>x.card=card);
-    list.append(card);
+    cards.push(card);list.append(card);
   });
   const el=h('div');
   if(opts.bank!==false){
@@ -60,14 +60,16 @@ function makeCompletar(items,opts={}){
     el.append(h('div',{class:'row',style:'margin-bottom:10px'},toggle),bank);
   }
   el.append(list);
-  return{el,grade(){
+  return{el,cards,grade(){
     let ok=0;
+    cards.forEach(c=>c.classList.remove('ok','bad'));
     inputs.forEach(x=>{
       x.inp.classList.remove('ok','bad');x.inp.parentNode.querySelectorAll('.ans').forEach(n=>{if(n.dataset.for===String(inputs.indexOf(x)))n.remove();});
       const good=x.alts.some(a=>norm(a)===norm(x.inp.value));
       x.inp.classList.add(good?'ok':'bad');
       if(good)ok++;else x.inp.after(h('span',{class:'ans','data-for':String(inputs.indexOf(x))},'→ '+x.alts[0]));
     });
+    cards.forEach(c=>{const mine=inputs.filter(x=>x.card===c);c.classList.add(mine.every(x=>x.inp.classList.contains('ok'))?'ok':'bad');});
     return{ok,total:inputs.length};
   }};
 }
@@ -81,7 +83,7 @@ function makeMarcar(items){
     const card=h('div',{class:'qcard'},h('span',{class:'qn'},i+1),h('p',{class:'q'},it.q),h('div',{class:'opts'},opts.map(o=>o.lab)),why);
     qs.push({opts,a:it.a,card});list.append(card);
   });
-  return{el:list,grade(){
+  return{el:list,cards:qs.map(q=>q.card),grade(){
     let ok=0;
     qs.forEach(q=>{
       q.card.classList.remove('ok','bad');q.opts.forEach(o=>o.lab.classList.remove('right','wrong'));
@@ -104,7 +106,7 @@ function makeVF(items){
     const card=h('div',{class:'qcard'},h('span',{class:'qn'},i+1),h('p',{class:'q'},it.q),h('div',{class:'vf'},V.lab,F.lab),why);
     qs.push({V,F,a:it.a,card});list.append(card);
   });
-  return{el:list,grade(){
+  return{el:list,cards:qs.map(q=>q.card),grade(){
     let ok=0;
     qs.forEach(q=>{
       [q.V,q.F].forEach(o=>o.lab.classList.remove('right','wrong'));q.card.classList.remove('ok','bad');
@@ -177,7 +179,7 @@ function viewHome(){
   const next=TEMAS.find(t=>temaPct(t)<100)||TEMAS[0];
   const hero=h('section',{class:'hero'},
     h('div',{},
-      h('h1',{},'Estudia Giuliana'),
+      h('h1',{},'Estudia Giu Giu'),
       h('p',{class:'lead'},'Siete temas resumidos, tarjetas para repasar, práctica con el mismo formato del examen y casos científicos resueltos paso a paso.'),
       h('div',{class:'row'},
         h('a',{class:'btn',href:'#/tema/'+next.id},P.xp?'Seguir con el Tema '+next.id:'Empezar por el Tema '+next.id),
@@ -191,7 +193,7 @@ function viewHome(){
   }));
   const extras=h('div',{class:'bigrow'},
     h('div',{class:'card'},h('h3',{},'🔬 Casos científicos'),h('p',{},'Aprende el método de 4 pasos y mira cómo se resuelve el caso del ciclo celular.'),h('a',{class:'btn alt sm',href:'#/casos'},'Ver la guía')),
-    h('div',{class:'card'},h('h3',{},'📝 Simulacro de examen'),h('p',{},'Mezcla de todos los temas: completar, marcar, verdadero/falso y casos.'),h('a',{class:'btn alt sm',href:'#/simulacro'},'Hacer simulacro')));
+    h('div',{class:'card'},h('h3',{},'📝 Examen general'),h('p',{},'Todos los temas juntos, con casos, nota sobre 20 y comentarios graciosos.'),h('a',{class:'btn alt sm',href:'#/simulacro'},'Dar el examen')));
   setView(h('div',{},hero,h('h2',{},'Los 7 temas'),grid,extras),'');
 }
 
@@ -289,7 +291,7 @@ function casoBlock(c,opts={}){
     sol.innerHTML='';
     sol.append(h('h3',{},'Así se resuelve, paso a paso'),
       h('div',{class:'steps'},c.pasos.map((p,i)=>h('div',{class:'stp'},h('div',{class:'n'},i+1),h('div',{},h('h4',{},p[0]),h('p',{html:p[1]}))))),
-      h('div',{class:'card',style:'margin-top:14px'},h('h4',{},'✍️ Respuesta modelo'),h('p',{html:c.modelo,style:'margin:0'})));
+      h('div',{class:'card',style:'margin-top:14px'},h('h4',{},'Respuesta modelo'),h('p',{html:c.modelo,style:'margin:0'})));
   };
   const el=h('div',{class:'caso'},
     h('div',{class:'sit'},h('h3',{},c.titulo),h('p',{html:c.situacion,style:'margin:0'})),
@@ -363,56 +365,91 @@ function viewCasos(){
     stepsBox.append(h('div',{class:'stp'},h('div',{class:'n'},shown),h('div',{},h('h4',{},s[0]),h('p',{html:s[1]}))));
     if(shown===m.pasos.length){nextBtn.textContent='✅ Listo';nextBtn.disabled=true;final.hidden=false;}else nextBtn.textContent='Mostrar el paso '+(shown+1);
   }},'Mostrar el paso 1');
-  const final=h('div',{class:'card',hidden:true,style:'margin-top:14px'},h('h4',{},'✍️ Respuesta completa (como la escribirías)'),h('p',{html:m.respuesta,style:'margin:0'}));
+  const final=h('div',{class:'card',hidden:true,style:'margin-top:14px'},h('h4',{},'Respuesta completa (como la escribirías)'),h('p',{html:m.respuesta,style:'margin:0'}));
   root.append(h('h3',{style:'margin-top:20px'},'Resolvámoslo juntos'),h('div',{class:'row'},nextBtn),stepsBox,final);
   // plantilla
   root.append(h('h2',{style:'margin-top:32px'},'Plantilla para cualquier caso'),h('div',{class:'tpl'},g.plantilla));
   // casos por tema
   root.append(h('h2',{style:'margin-top:32px'},'Ahora practica'),h('p',{},'Cada tema tiene sus propios casos parecidos a este, con solución paso a paso:'),
     h('div',{class:'row'},TEMAS.filter(t=>(t.casos||[]).length).map(t=>h('a',{class:'btn alt sm',href:'#/tema/'+t.id+'/casos'},'Tema '+t.id))),
-    h('div',{style:'margin-top:12px'},h('a',{class:'btn',href:'#/simulacro'},'Ir al simulacro →')));
+    h('div',{style:'margin-top:12px'},h('a',{class:'btn',href:'#/simulacro'},'Ir al examen general →')));
   setView(root,'Cómo resolver casos');
 }
 
-/* ───────── Simulacro ───────── */
+/* ───────── Examen general / simulacro ───────── */
+const QUIP_OK=['¡Eso! Tus ribosomas están trabajando a full 💪','Correcto. Mendel te manda un saludo 🌼','¡Bien! Esa neurona sí hizo sinapsis ⚡','Otro punto para el equipo núcleo 🧬','Respuesta limpia, sin mutaciones ✨','Eres una enzima: acelerando el aprobado 🔑','¡Cerebro en modo mitocondria: energía pura! 🔋'];
+const QUIP_BAD=['Uy… esa neurona se fue de vacaciones 🏖️','Ni Mendel lo vio venir 🌱','Tu mitocondria necesita un cafecito ☕','Eso fue una mutación… y no de las buenas 🧫','Casi, casi. Hasta las bacterias se equivocan al dividirse 🦠','Error de transcripción detectado. ¡Se corrige y listo! 📝','Esa respuesta quedó en G0: fuera del ciclo 😴','Tranqui, la fotosíntesis también empieza con poca luz 🌥️','Hmm… tu ribosoma leyó mal el codón 🔬'];
+const pickOne=a=>a[Math.floor(Math.random()*a.length)];
+function addQuips(cards){cards.forEach(c=>{c.querySelectorAll('.quip').forEach(n=>n.remove());const ok=c.classList.contains('ok');c.append(h('div',{class:'quip '+(ok?'y':'n')},pickOne(ok?QUIP_OK:QUIP_BAD)));});}
+function veredicto(n){
+  if(n>=18)return['🏆','¡Eres Mendel reencarnado!','Tu núcleo está en modo genio. Solo repasa por gusto.'];
+  if(n>=15)return['🔥','¡Muy buen nivel!','Tus ribosomas fabrican respuestas correctas. Pule los temas en rojo y listo.'];
+  if(n>=11)return['😅','Pasaste… raspando','Tu mitocondria pide más café ☕. Repasa los temas marcados y vuelve a intentarlo.'];
+  if(n>=7)return['🧫','Tu cerebro está en G0','Fuera del ciclo celular. ¡Vuelve a entrar! Lee los resúmenes y repite el examen.'];
+  return['🦠','Hasta una bacteria sacó más…','…pero las bacterias se dividen y tú puedes volver a intentarlo. Empieza por los temas en rojo 💪. Por cierto, que malos gustos okno :)'];
+}
+const fmt=n=>n.toFixed(1).replace('.',',');
+function balanced(temas,key,n){
+  const lists=temas.map(t=>shuffle((t[key]||[]).map(it=>({it,tid:t.id})))).filter(l=>l.length);
+  const out=[];let i=0;
+  while(out.length<n&&lists.some(l=>l.length)){const l=lists[i%lists.length];if(l.length)out.push(l.shift());i++;}
+  return shuffle(out);
+}
 function viewSimulacro(){
   const root=h('div',{class:'t3'});
-  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Simulacro'),h('h1',{},'Simulacro de examen'),h('p',{},'Mezcla preguntas al azar con los mismos formatos que verás: completar, marcar, verdadero o falso y casos científicos.')));
-  const cfg=h('div',{class:'card cfg'},h('h3',{},'¿Qué temas incluir?'));
+  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Para el examen'),h('h1',{},'Examen general'),h('p',{},'Preguntas de todos los temas, con completar, marcar, verdadero o falso y casos científicos. Al final recibes tu nota sobre 20 y los temas que debes repasar. Pobre que falles mardita :b')));
+  const generalBtn=h('button',{class:'btn tc',type:'button',onclick:()=>build(TEMAS,{c:12,m:15,v:15,k:3},'Examen general completo')},'Empezar examen general');
+  const cfg=h('div',{class:'card cfg'},h('h3',{},'Simulacro por temas'),h('p',{class:'muted'},'Elige qué temas incluir: 8 de completar, 10 de marcar, 10 de V/F y 2 casos.'));
   const checks=TEMAS.map(t=>{const c=h('input',{type:'checkbox',checked:true});cfg.append(h('label',{},c,`Tema ${t.id}: ${t.titulo}`));return{c,t};});
-  const start=h('button',{class:'btn tc',type:'button',onclick:()=>{const sel=checks.filter(x=>x.c.checked).map(x=>x.t);if(!sel.length){alert('Elige al menos un tema.');return;}build(sel);}},'Empezar simulacro');
-  cfg.append(h('div',{class:'row',style:'margin-top:12px'},start));
-  root.append(cfg);
+  cfg.append(h('div',{class:'row',style:'margin-top:12px'},h('button',{class:'btn alt',type:'button',onclick:()=>{const sel=checks.filter(x=>x.c.checked).map(x=>x.t);if(!sel.length){alert('Elige al menos un tema.');return;}build(sel,{c:8,m:10,v:10,k:2},'Simulacro por temas');}},'Empezar simulacro')));
+  const best=P.best.sim!=null?h('p',{class:'muted',style:'margin:8px 0 0'},'Tu mejor nota: '+fmt(P.best.sim/5)+' / 20'):null;
+  root.append(h('div',{class:'bigrow',style:'margin-top:0'},
+    h('div',{class:'card'},h('h3',{},'Examen general completo'),h('p',{},'Los 7 temas repartidos parejo: 12 para completar, 15 para marcar, 15 de verdadero o falso y 3 casos científicos. Toma tiempo: ¡ponte cómoda!'),generalBtn,best),
+    cfg));
   const area=h('div',{style:'margin-top:24px'});root.append(area);
-  setView(root,'Simulacro');
-  function build(sel){
+  setView(root,'Examen general');
+  function build(sel,n,label){
     area.innerHTML='';
-    const pool=k=>sel.flatMap(t=>t[k]||[]);
-    const comp=pick(pool('completar'),8),mar=pick(pool('marcar'),10),vf=pick(pool('vf'),10),cas=pick(sel.flatMap(t=>t.casos||[]),2);
-    const A=makeCompletar(comp),B=makeMarcar(mar),C=makeVF(vf);
-    const cb=cas.map(c=>casoBlock(c,{noSolution:true}));
+    const C=balanced(sel,'completar',n.c),M=balanced(sel,'marcar',n.m),V=balanced(sel,'vf',n.v);
+    const K=balanced(sel,'casos',n.k);
+    const A=makeCompletar(C.map(x=>x.it)),B=makeMarcar(M.map(x=>x.it)),D=makeVF(V.map(x=>x.it));
+    const cb=K.map(x=>casoBlock(x.it,{noSolution:true}));
     const t0=Date.now(),timer=h('span',{class:'timer'},'0:00');
-    const iv=setInterval(()=>{if(!document.body.contains(timer)){clearInterval(iv);return;}const s=Math.floor((Date.now()-t0)/1000);timer.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');},1000);
+    const iv=setInterval(()=>{if(!document.body.contains(timer)){clearInterval(iv);return;}const sec=Math.floor((Date.now()-t0)/1000);timer.textContent=Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');},1000);
     const result=h('div',{class:'result',role:'status','aria-live':'polite'});
     const fin=h('button',{class:'btn tc',type:'button',onclick:()=>{
       clearInterval(iv);
-      const a=A.grade(),b=B.grade(),c=C.grade();
+      const a=A.grade(),b=B.grade(),c=D.grade();
       const covs=cb.map(x=>x.check());
-      const ok=a.ok+b.ok+c.ok,tot=a.total+b.total+c.total,pct=Math.round(100*ok/tot);
-      result.innerHTML=`<div class="score">${pct}% en preguntas cerradas</div>
-        <div>Completar: ${a.ok}/${a.total} · Marcar: ${b.ok}/${b.total} · V/F: ${c.ok}/${c.total}${covs.length?' · Casos: '+covs.map(x=>x+'%').join(' y '):''}</div>
-        <div>${msgFor(pct)} Tiempo: ${timer.textContent}</div>`;
+      [A,B,D].forEach(x=>addQuips(x.cards));
+      const ok=a.ok+b.ok+c.ok,tot=a.total+b.total+c.total,pct=ok/tot*100;
+      const casesAvg=covs.length?covs.reduce((x,y)=>x+y,0)/covs.length:0;
+      const nota=covs.length?20*(0.75*pct+0.25*casesAvg)/100:20*pct/100;
+      // por tema
+      const stats={};
+      const tally=(maker,list)=>maker.cards.forEach((card,i)=>{const id=list[i].tid;(stats[id]=stats[id]||{ok:0,tot:0}).tot++;if(card.classList.contains('ok'))stats[id].ok++;});
+      tally(A,C);tally(B,M);tally(D,V);
+      const rows=Object.keys(stats).map(id=>({id:+id,p:Math.round(100*stats[id].ok/stats[id].tot),...stats[id]})).sort((x,y)=>x.p-y.p);
+      const v=veredicto(nota);
+      result.innerHTML='';
+      result.append(
+        h('div',{class:'score'},v[0]+' '+fmt(nota)+' / 20'),
+        h('div',{},h('b',{},v[1]+' '),v[2]),
+        h('p',{style:'margin:10px 0 4px'},`Completar: ${a.ok}/${a.total} · Marcar: ${b.ok}/${b.total} · V/F: ${c.ok}/${c.total}`+(covs.length?` · Casos: ${covs.map(x=>x+'%').join(' · ')}`:'')+` · Tiempo: ${timer.textContent}`),
+        h('div',{class:'row',style:'gap:8px;margin-top:6px'},rows.map(r=>h('a',{class:'chip '+(r.p<70?'weak':''),href:'#/tema/'+r.id,title:'Ir al tema '+r.id},`Tema ${r.id}: ${r.p}%${r.p<70?' · repasar':' ✓'}`))),
+        h('p',{class:'muted',style:'margin:10px 0 0;font-size:.85rem'},'Nota = 75 % preguntas cerradas + 25 % casos' + (covs.length?'':' (sin casos)')+'. En los casos el programa solo busca palabras clave: compara con la solución.'));
       result.classList.add('show');result.scrollIntoView({behavior:'smooth',block:'center'});
       cb.forEach(x=>x.showSol());
-      record('sim',pct);if(pct>=90)confetti();
-      fin.textContent='Volver a comprobar';
+      record('sim',Math.round(nota*5));
+      if(nota>=15)confetti();
+      fin.textContent='Volver a calificar';
     }},'Terminar y calificar');
-    area.append(h('div',{class:'row',style:'justify-content:space-between'},h('h2',{style:'margin:0'},'Tu examen'),h('div',{},'⏱ ',timer)),
+    area.append(h('div',{class:'row',style:'justify-content:space-between'},h('h2',{style:'margin:0'},label),h('div',{},'⏱ ',timer)),
       h('h3',{style:'margin-top:20px'},'I. Completa las palabras'),A.el,
       h('h3',{style:'margin-top:28px'},'II. Marca la alternativa correcta'),B.el,
-      h('h3',{style:'margin-top:28px'},'III. Verdadero o falso'),C.el,
+      h('h3',{style:'margin-top:28px'},'III. Verdadero o falso'),D.el,
       cb.length?h('h3',{style:'margin-top:28px'},'IV. Casos científicos'):null,...cb.map(x=>x.el),
-      result,h('div',{class:'sticky-act'},h('button',{class:'btn alt',type:'button',onclick:()=>build(sel)},'🔀 Nuevo examen'),fin));
+      result,h('div',{class:'sticky-act'},h('button',{class:'btn alt',type:'button',onclick:()=>build(sel,n,label)},'🔀 Nuevo examen'),fin));
     area.scrollIntoView({behavior:'smooth'});
   }
 }
