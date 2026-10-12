@@ -240,7 +240,7 @@ function practicarView(t){
   const root=h('div',{});
   const menu=()=>{
     root.innerHTML='';
-    root.append(h('p',{class:'muted'},'Elige un tipo de ejercicio. Son los mismos formatos del examen.'));
+    root.append(h('p',{class:'muted'},'Elige un tipo de ejercicio. Son los mismos formatos del examen. Si repites, salen otras preguntas.'));
     const g=h('div',{class:'acts'});
     ACTS.filter(a=>t[a]&&t[a].length).forEach(a=>{
       const b=P.best[`t${t.id}:${a}`];
@@ -250,7 +250,9 @@ function practicarView(t){
   };
   const run=(a)=>{
     root.innerHTML='';
-    const items=a==='ordenar'||a==='relacionar'?t[a]:shuffle(t[a]);
+    const caps={completar:8,marcar:7,vf:7};
+    const pool=t[a]||[];
+    const items=(a==='ordenar'||a==='relacionar')?pool:pick(pool,Math.min(pool.length,caps[a]||pool.length));
     const act=MAKERS[a](items);
     const result=h('div',{class:'result',role:'status','aria-live':'polite'});
     const check=h('button',{class:'btn tc',type:'button',onclick:()=>{
@@ -390,21 +392,21 @@ function veredicto(n){
 }
 const fmt=n=>n.toFixed(1).replace('.',',');
 function balanced(temas,key,n){
-  const lists=temas.map(t=>shuffle((t[key]||[]).map(it=>({it,tid:t.id})))).filter(l=>l.length);
+  const lists=shuffle(temas.map(t=>shuffle((t[key]||[]).map(it=>({it,tid:t.id})))).filter(l=>l.length));
   const out=[];let i=0;
   while(out.length<n&&lists.some(l=>l.length)){const l=lists[i%lists.length];if(l.length)out.push(l.shift());i++;}
   return shuffle(out);
 }
 function viewSimulacro(){
   const root=h('div',{class:'t3'});
-  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Para el examen'),h('h1',{},'Examen general'),h('p',{},'Preguntas de todos los temas, con completar, marcar, verdadero o falso y casos científicos. Al final recibes tu nota sobre 20 y los temas que debes repasar. Pobre que falles mardita :b')));
+  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Para el examen'),h('h1',{},'Examen general'),h('p',{},'Preguntas de todos los temas, con completar, marcar, verdadero o falso y casos científicos. Cada intento mezcla otras preguntas y otros casos, al azar. Al final recibes tu nota sobre 20 y los temas que debes repasar. Pobre que falles mardita :b')));
   const generalBtn=h('button',{class:'btn tc',type:'button',onclick:()=>build(TEMAS,{c:12,m:15,v:15,k:3},'Examen general completo')},'Empezar examen general');
-  const cfg=h('div',{class:'card cfg'},h('h3',{},'Simulacro por temas'),h('p',{class:'muted'},'Elige qué temas incluir: 8 de completar, 10 de marcar, 10 de V/F y 2 casos.'));
+  const cfg=h('div',{class:'card cfg'},h('h3',{},'Simulacro por temas'),h('p',{class:'muted'},'Elige qué temas incluir: 8 de completar, 10 de marcar, 10 de V/F y 2 casos. También salen al azar y cambian si lo repites.'));
   const checks=TEMAS.map(t=>{const c=h('input',{type:'checkbox',checked:true});cfg.append(h('label',{},c,`Tema ${t.id}: ${t.titulo}`));return{c,t};});
   cfg.append(h('div',{class:'row',style:'margin-top:12px'},h('button',{class:'btn alt',type:'button',onclick:()=>{const sel=checks.filter(x=>x.c.checked).map(x=>x.t);if(!sel.length){alert('Elige al menos un tema.');return;}build(sel,{c:8,m:10,v:10,k:2},'Simulacro por temas');}},'Empezar simulacro')));
   const best=P.best.sim!=null?h('p',{class:'muted',style:'margin:8px 0 0'},'Tu mejor nota: '+fmt(P.best.sim/5)+' / 20'):null;
   root.append(h('div',{class:'bigrow',style:'margin-top:0'},
-    h('div',{class:'card'},h('h3',{},'Examen general completo'),h('p',{},'Los 7 temas repartidos parejo: 12 para completar, 15 para marcar, 15 de verdadero o falso y 3 casos científicos. Toma tiempo: ¡ponte cómoda!'),generalBtn,best),
+    h('div',{class:'card'},h('h3',{},'Examen general completo'),h('p',{},'Los 7 temas repartidos parejo: 12 para completar, 15 para marcar, 15 de verdadero o falso y 3 casos científicos de temas distintos. Cada intento cambia las preguntas y los casos. Toma tiempo: ¡ponte cómoda!'),generalBtn,best),
     cfg));
   const area=h('div',{style:'margin-top:24px'});root.append(area);
   setView(root,'Examen general');
