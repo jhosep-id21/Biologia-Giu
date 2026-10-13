@@ -1,9 +1,17 @@
 /* Biología general · guía de estudio — app (JS puro, sin dependencias) */
 (function(){
 'use strict';
-const TEMAS=(window.TEMAS||[]).slice().sort((a,b)=>a.id-b.id);
-const GUIA=window.GUIA;
 const $=(s,r=document)=>r.querySelector(s);
+let CURRENT_TEMAS = [];
+let CURRENT_TYPE = '';
+function isRed(){return CURRENT_TYPE==='redaccion';}
+function setCourse(type){
+  CURRENT_TYPE=type;
+  const src=type==='redaccion'?window.REDACCION_TEMAS:window.BIOLOGIA_TEMAS;
+  CURRENT_TEMAS=(src||[]).slice().sort((a,b)=>a.id-b.id);
+}
+const cid=t=>(isRed()?'r':'b')+t.id;
+const go=p=>'#/'+CURRENT_TYPE+(p?'/'+p:'');
 
 function h(tag,attrs,...kids){const e=document.createElement(tag);for(const k in(attrs||{})){const v=attrs[k];if(v==null||v===false)continue;if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?'':v);}kids.flat(Infinity).forEach(c=>{if(c==null||c===false)return;e.append(c.nodeType?c:document.createTextNode(c));});return e;}
 const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9+\-\/\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -19,12 +27,13 @@ function updateXP(){const el=$('#xpNum');if(el)el.textContent=P.xp;}
 function record(key,pct){const old=P.best[key]||0;if(pct>old){P.xp+=Math.max(1,Math.round((pct-old)/10));P.best[key]=pct;}save();}
 const ACTS=['completar','marcar','vf','ordenar','relacionar'];
 function temaPct(t){
+  const id=cid(t);
   const hasAct=ACTS.filter(a=>t[a]&&t[a].length);
   const ncases=(t.casos||[]).length;
   const parts=1+hasAct.length+ncases;
-  let sum=P.read[t.id]?100:0;
-  hasAct.forEach(a=>sum+=Math.min(100,P.best[`t${t.id}:${a}`]||0));
-  (t.casos||[]).forEach(c=>sum+=Math.min(100,P.cases[c.id]||0)>=60?100:0);
+  let sum=P.read[id]?100:0;
+  hasAct.forEach(a=>sum+=Math.min(100,P.best[id+':'+a]||0));
+  (t.casos||[]).forEach(c=>sum+=Math.min(100,P.cases[id+':'+c.id]||0)>=60?100:0);
   return Math.round(sum/parts);
 }
 
@@ -169,32 +178,81 @@ const ACTINFO={
 function msgFor(p){return p===100?'¡Perfecto! Dominas esta parte. 🎉':p>=80?'¡Muy bien! Repasa lo que falló y listo.':p>=60?'Vas bien. Lee las explicaciones y reintenta.':'Todavía no. Vuelve al resumen y prueba otra vez, ¡se puede!';}
 
 /* ───────── Vistas ───────── */
-const main=$('#main');
-function setView(node,title){main.innerHTML='';main.append(node);document.title=(title?title+' · ':'')+'Biología general';window.scrollTo(0,0);main.focus({preventScroll:true});}
+const main=()=>$('#main');
+function markSide(){
+  const here=location.hash||'#/';
+  document.querySelectorAll('#side .side-link').forEach(a=>{
+    const href=a.getAttribute('href')||'';
+    const on=href===here||(href!=='#/'&&here.startsWith(href+'/'));
+    a.classList.toggle('on',on);
+  });
+}
+function setView(node,title){
+  const host=$('#main');
+  if(!host)return;
+  host.innerHTML='';
+  host.append(node);
+  const curso=isRed()?'Redacción':CURRENT_TYPE?'Biología general':'Estudios';
+  document.title=(title?title+' · ':'')+curso;
+  window.scrollTo(0,0);
+  host.focus({preventScroll:true});
+  markSide();
+}
 function themeClass(t){return 't'+t.id;}
 
-function viewHome(){
-  const cellBox=h('div',{class:'hero-cell'});
-  WIDGETS.hero(cellBox);
-  const next=TEMAS.find(t=>temaPct(t)<100)||TEMAS[0];
+function courseHome(kind){
+  const bio=kind==='biologia';
+  const next=CURRENT_TEMAS.find(t=>temaPct(t)<100)||CURRENT_TEMAS[0];
+  const cell=h('div',{class:'hero-cell'});
+  if(bio&&window.WIDGETS&&WIDGETS.hero)WIDGETS.hero(cell);
+  else cell.classList.add('text-diagram'),cell.append(
+    h('div',{class:'mini-line'},'Introducción',h('small',{},'Presenta el tema y el propósito')),
+    h('div',{class:'mini-line'},'Desarrollo',h('small',{},'Explica, argumenta y ejemplifica')),
+    h('div',{class:'mini-line'},'Conclusión',h('small',{},'Integra y cierra, sin ideas nuevas'))
+  );
   const hero=h('section',{class:'hero'},
     h('div',{},
-      h('h1',{},'Estudia Giu Giu'),
-      h('p',{class:'lead'},'Siete temas resumidos, tarjetas para repasar, práctica con el mismo formato del examen y casos científicos resueltos paso a paso.'),
+      h('p',{class:'tag'},bio?'Unidad de biología':'Unidad I · Información y argumentos'),
+      h('h1',{},bio?'Biología general':'Redacción y comprensión'),
+      h('p',{class:'lead'},bio
+        ?'Los mismos resúmenes, tarjetas, casos y el examen general. Entra a un tema o practica todo junto.'
+        :'Sesiones 1 a 7, resumidas para estudiar: estructura, lectura literal e inferencial, argumentos, ritmo lector y síntesis. Cada tema tiene su examen y hay uno general.'),
       h('div',{class:'row'},
-        h('a',{class:'btn',href:'#/tema/'+next.id},P.xp?'Seguir con el Tema '+next.id:'Empezar por el Tema '+next.id),
-        h('a',{class:'btn alt',href:'#/casos'},'Aprender a resolver casos'))),
-    cellBox);
-  const grid=h('div',{class:'grid'},TEMAS.map(t=>{
+        next?h('a',{class:'btn',href:go('tema/'+next.id)},'Empezar'):null,
+        h('a',{class:'btn alt',href:go('simulacro')},'Examen general'),
+        h('a',{class:'btn alt',href:go('chuleta')},'Resumen para imprimir'),
+        h('a',{class:'btn alt',href:go('casos')},bio?'Cómo resolver casos':'Cómo analizar un texto'))),
+    cell);
+  const grid=h('div',{class:'grid'},CURRENT_TEMAS.map(t=>{
     const p=temaPct(t);
-    return h('a',{class:'tcard '+themeClass(t),href:'#/tema/'+t.id},
+    return h('a',{class:'tcard '+themeClass(t),href:go('tema/'+t.id)},
       h('div',{class:'num'},t.id),h('h3',{},t.titulo),h('p',{},t.corto),
-      h('div',{class:'pct'},p+'% completado'),h('div',{class:'bar'},h('i',{style:'width:'+p+'%'})));
+      h('div',{class:'pct'},p+'% del tema'));
   }));
-  const extras=h('div',{class:'bigrow'},
-    h('div',{class:'card'},h('h3',{},'🔬 Casos científicos'),h('p',{},'Aprende el método de 4 pasos y mira cómo se resuelve el caso del ciclo celular.'),h('a',{class:'btn alt sm',href:'#/casos'},'Ver la guía')),
-    h('div',{class:'card'},h('h3',{},'📝 Examen general'),h('p',{},'Todos los temas juntos, con casos, nota sobre 20 y comentarios graciosos.'),h('a',{class:'btn alt sm',href:'#/simulacro'},'Dar el examen')));
-  setView(h('div',{},hero,h('h2',{},'Los 7 temas'),grid,extras),'');
+  setView(h('div',{},hero,h('h2',{},'Temas'),grid),bio?'Biología':'Redacción');
+}
+function viewBiologiaHome(){courseHome('biologia');}
+function viewRedaccionHome(){courseHome('redaccion');}
+
+function viewHome(){
+  const card=(type,kicker,title,text,tags)=>{
+    const wrap=h('a',{class:'course',href:'#/'+type},
+      h('div',{class:'kicker'},kicker),
+      h('h2',{},title),
+      h('p',{},text),
+      h('div',{class:'meta'},tags.map(t=>h('span',{class:'pilltag'},t))),
+      h('div',{class:'go'},'Entrar al curso →'));
+    return h('div',{class:type==='biologia'?'t1':'t2'},wrap);
+  };
+  setView(h('div',{class:'picker'},
+    h('p',{class:'tag'},'Estudia cachuda'),
+    h('h1',{},'Elije tu curso CHAMA'),
+    h('p',{class:'lead'},'Ojalá jales, okno, mis mejores deseos.'),
+    h('div',{class:'courses'},
+      card('biologia','Ciencias','Biología general','Célula, metabolismo, herencia, reproducción y los casos científicos que ya practicabas.',['7 temas','Casos','Examen','Resumen']),
+      card('redaccion','Humanidades','Redacción','Comprensión de textos de la Unidad I: ideas, inferencias, argumentos, lectura eficiente y síntesis.',['7 sesiones','Análisis','Examen','Resumen'])
+    )
+  ),'Inicio');
 }
 
 function resumenView(t){
@@ -214,8 +272,9 @@ function resumenView(t){
     const box=h('section',{class:'widget'},h('h3',{},w.h));
     WIDGETS[w.k](box);frag.append(box);
   });
-  const btn=h('button',{class:'btn tc',type:'button',onclick:()=>{P.read[t.id]=true;P.xp+=P.read[t.id+'x']?0:5;P.read[t.id+'x']=true;save();btn.textContent='✅ Resumen leído';}},P.read[t.id]?'✅ Resumen leído':'Marcar como leído');
-  frag.append(h('div',{class:'finish'},btn,h('a',{class:'btn alt',href:'#/tema/'+t.id+'/tarjetas'},'Siguiente: tarjetas →')));
+  const id=cid(t);
+  const btn=h('button',{class:'btn tc',type:'button',onclick:()=>{const already=P.read[id+'x'];P.read[id]=true;if(!already)P.xp+=5;P.read[id+'x']=true;save();btn.textContent='Resumen leído';}},P.read[id]?'Resumen leído':'Marcar como leído');
+  frag.append(h('div',{class:'finish'},btn,h('a',{class:'btn alt',href:go('tema/'+t.id+'/tarjetas')},'Siguiente: tarjetas')));
   return frag;
 }
 function tarjetasView(t){
@@ -231,7 +290,7 @@ function tarjetasView(t){
       h('div',{class:'row',style:'justify-content:center'},
         h('button',{class:'btn alt',type:'button',onclick:()=>{i=(i-1+cards.length)%cards.length;draw();}},'← Anterior'),
         h('button',{class:'btn alt',type:'button',onclick:()=>{order=shuffle(order);i=0;draw();}},'🔀 Mezclar'),
-        h('button',{class:'btn',type:'button',onclick:()=>{if(i===cards.length-1){P.cards[t.id]=true;P.xp+=3;save();confetti();}i=(i+1)%cards.length;draw();}},'Siguiente →')));
+        h('button',{class:'btn',type:'button',onclick:()=>{if(i===cards.length-1){P.cards[cid(t)]=true;P.xp+=3;save();confetti();}i=(i+1)%cards.length;draw();}},'Siguiente')));
   }
   draw();return root;
 }
@@ -243,7 +302,7 @@ function practicarView(t){
     root.append(h('p',{class:'muted'},'Elige un tipo de ejercicio. Son los mismos formatos del examen. Si repites, salen otras preguntas.'));
     const g=h('div',{class:'acts'});
     ACTS.filter(a=>t[a]&&t[a].length).forEach(a=>{
-      const b=P.best[`t${t.id}:${a}`];
+      const b=P.best[cid(t)+':'+a];
       g.append(h('button',{class:'act',type:'button',onclick:()=>run(a)},h('span',{class:'e'},ACTINFO[a].e),h('b',{},ACTINFO[a].t),h('span',{},ACTINFO[a].d),b!=null?h('span',{class:'best'},'Mejor: '+b+'%'):null));
     });
     root.append(g);
@@ -257,7 +316,7 @@ function practicarView(t){
     const result=h('div',{class:'result',role:'status','aria-live':'polite'});
     const check=h('button',{class:'btn tc',type:'button',onclick:()=>{
       const r=act.grade();const pct=Math.round(100*r.ok/r.total);
-      record(`t${t.id}:${a}`,pct);
+      record(cid(t)+':'+a,pct);
       result.innerHTML=`<div class="score">${r.ok} / ${r.total} · ${pct}%</div><div>${msgFor(pct)}</div>`;
       result.classList.add('show');result.scrollIntoView({behavior:'smooth',block:'center'});
       if(pct===100)confetti();
@@ -309,38 +368,43 @@ function casosTemaView(t){
   if(!cs.length)return h('p',{},'Este tema no tiene casos todavía.');
   const list=()=>{
     root.innerHTML='';
-    root.append(h('div',{class:'card',style:'margin-bottom:18px'},h('p',{style:'margin:0'},'💡 ¿No sabes cómo empezar? Mira primero la ',h('a',{href:'#/casos'},'guía de 4 pasos'),'. Luego escribe tu respuesta, comprueba qué ideas te faltaron y mira la solución.')));
+    root.append(h('div',{class:'card',style:'margin-bottom:18px'},h('p',{style:'margin:0'},'¿No sabes cómo empezar? Mira primero la ',h('a',{href:go('casos')},isRed()?'guía para analizar un texto':'guía de 4 pasos'),'. Luego escribe tu respuesta, comprueba qué ideas te faltaron y mira la solución.')));
     cs.forEach((c,i)=>{
-      const b=P.cases[c.id];
+      const b=P.cases[cid(t)+':'+c.id];
       root.append(h('button',{class:'act',type:'button',style:'width:100%;margin-bottom:14px',onclick:()=>open(c)},h('span',{class:'e'},'🔬'),h('b',{},`Caso ${i+1}: ${c.titulo}`),h('span',{},c.resumen||''),b!=null?h('span',{class:'best'},'Mejor cobertura: '+b+'%'):null));
     });
   };
   const open=c=>{
     root.innerHTML='';
-    const cb=casoBlock(c,{onScore:pct=>{if(pct>(P.cases[c.id]||0)){P.cases[c.id]=pct;P.xp+=Math.round(pct/10);save();}if(pct>=80)confetti();}});
+    const cb=casoBlock(c,{onScore:pct=>{const key=cid(t)+':'+c.id;if(pct>(P.cases[key]||0)){P.cases[key]=pct;P.xp+=Math.round(pct/10);save();}if(pct>=80)confetti();}});
     root.append(h('button',{class:'btn alt sm',type:'button',style:'margin-bottom:14px',onclick:list},'← Casos'),cb.el);window.scrollTo(0,0);
   };
   list();return root;
 }
 
 function viewTema(id,tab){
-  const t=TEMAS.find(x=>x.id===id);if(!t)return viewHome();
+  const t=CURRENT_TEMAS.find(x=>x.id===id);if(!t)return viewHome();
   tab=tab||'resumen';
   const tabs=[['resumen','📖 Resumen'],['tarjetas','🃏 Tarjetas'],['practicar','🎯 Practicar'],['casos','🔬 Casos']];
   const body=tab==='tarjetas'?tarjetasView(t):tab==='practicar'?practicarView(t):tab==='casos'?casosTemaView(t):resumenView(t);
   const dark=(t.id===5||t.id===7);
   const page=h('div',{class:themeClass(t)},
     h('div',{class:'thead'+(dark?' light-text':'')},h('div',{class:'big'},'Tema '+t.id),h('h1',{},t.titulo),h('p',{},t.objetivo)),
-    h('nav',{class:'tabs','aria-label':'Secciones del tema'},tabs.map(([k,l])=>h('a',{class:'tab'+(k===tab?' on':''),href:'#/tema/'+t.id+(k==='resumen'?'':'/'+k)},l))),
+    h('nav',{class:'tabs','aria-label':'Secciones del tema'},tabs.map(([k,l])=>h('a',{class:'tab'+(k===tab?' on':''),href:go('tema/'+t.id+(k==='resumen'?'':'/'+k))},l))),
     body);
   setView(page,'Tema '+t.id+' · '+t.titulo);
 }
 
 /* ───────── Guía de casos ───────── */
 function viewCasos(){
-  const g=GUIA,m=g.modelo;
+  const g=isRed()?(window.GUIA_RED||GUIA):GUIA,m=g.modelo;
   const root=h('div',{class:'t7'});
-  root.append(h('div',{class:'thead light-text'},h('div',{class:'big'},'Casos científicos'),h('h1',{},'Cómo resolver un caso científico'),h('p',{},'En el examen te darán una situación y tendrás que explicarla con los conceptos de clase. Con este método de 4 pasos siempre sabrás por dónde empezar.')));
+  root.append(h('div',{class:'thead light-text'},
+    h('div',{class:'big'},isRed()?'Análisis de textos':'Casos científicos'),
+    h('h1',{},isRed()?'Cómo analizar un texto':'Cómo resolver un caso científico'),
+    h('p',{},isRed()
+      ?'Te van a dar un fragmento. Tienes que decir qué sostiene, citar la pista y no afirmar de más. Con estos 4 pasos sabes por dónde empezar.'
+      :'En el examen te darán una situación y tendrás que explicarla con los conceptos de clase. Con este método de 4 pasos siempre sabrás por dónde empezar.')));
   // tipos de pregunta
   root.append(h('h2',{},'Antes: trucos para los otros tipos de pregunta'),
     h('div',{class:'tipcards'},g.trucos.map(x=>h('div',{class:'card'},h('h4',{},x[0]),h('p',{html:x[1]})))));
@@ -348,7 +412,7 @@ function viewCasos(){
   root.append(h('h2',{style:'margin-top:28px'},'El método de 4 pasos'),
     h('div',{class:'steps'},g.metodo.map((p,i)=>h('div',{class:'stp'},h('div',{class:'n'},i+1),h('div',{},h('h4',{},p[0]),h('p',{html:p[1]}))))));
   // caso modelo
-  root.append(h('h2',{style:'margin-top:32px'},'Caso modelo: el que te dieron'));
+  root.append(h('h2',{style:'margin-top:32px'},isRed()?'Texto modelo':'Caso modelo: el que te dieron'));
   const sit=h('div',{class:'sit'});
   const notes=h('div',{});
   m.situacion.forEach(seg=>{
@@ -373,8 +437,8 @@ function viewCasos(){
   root.append(h('h2',{style:'margin-top:32px'},'Plantilla para cualquier caso'),h('div',{class:'tpl'},g.plantilla));
   // casos por tema
   root.append(h('h2',{style:'margin-top:32px'},'Ahora practica'),h('p',{},'Cada tema tiene sus propios casos parecidos a este, con solución paso a paso:'),
-    h('div',{class:'row'},TEMAS.filter(t=>(t.casos||[]).length).map(t=>h('a',{class:'btn alt sm',href:'#/tema/'+t.id+'/casos'},'Tema '+t.id))),
-    h('div',{style:'margin-top:12px'},h('a',{class:'btn',href:'#/simulacro'},'Ir al examen general →')));
+    h('div',{class:'row'},CURRENT_TEMAS.filter(t=>(t.casos||[]).length).map(t=>h('a',{class:'btn alt sm',href:go('tema/'+t.id+'/casos')},'Tema '+t.id))),
+    h('div',{style:'margin-top:12px'},h('a',{class:'btn',href:go('simulacro')},'Ir al examen general')));
   setView(root,'Cómo resolver casos');
 }
 
@@ -382,8 +446,23 @@ function viewCasos(){
 const QUIP_OK=['¡Eso! Tus ribosomas están trabajando a full 💪','Correcto. Mendel te manda un saludo 🌼','¡Bien! Esa neurona sí hizo sinapsis ⚡','Otro punto para el equipo núcleo 🧬','Respuesta limpia, sin mutaciones ✨','Eres una enzima: acelerando el aprobado 🔑','¡Cerebro en modo mitocondria: energía pura! 🔋'];
 const QUIP_BAD=['Uy… esa neurona se fue de vacaciones 🏖️','Ni Mendel lo vio venir 🌱','Tu mitocondria necesita un cafecito ☕','Eso fue una mutación… y no de las buenas 🧫','Casi, casi. Hasta las bacterias se equivocan al dividirse 🦠','Error de transcripción detectado. ¡Se corrige y listo! 📝','Esa respuesta quedó en G0: fuera del ciclo 😴','Tranqui, la fotosíntesis también empieza con poca luz 🌥️','Hmm… tu ribosoma leyó mal el codón 🔬'];
 const pickOne=a=>a[Math.floor(Math.random()*a.length)];
-function addQuips(cards){cards.forEach(c=>{c.querySelectorAll('.quip').forEach(n=>n.remove());const ok=c.classList.contains('ok');c.append(h('div',{class:'quip '+(ok?'y':'n')},pickOne(ok?QUIP_OK:QUIP_BAD)));});}
+function addQuips(cards){
+  const okL=isRed()
+    ?['Esa idea sí estaba en el texto.','Inferencia con pista: así se hace.','Separaste el tema de la tesis.','No te pasaste de lo que el texto permite.','Respuesta limpia, sin inventar causas.']
+    :QUIP_OK;
+  const badL=isRed()
+    ?['Eso se fue de lo que el texto dice.','Se cruzaron el tema y la tesis.','Faltó la evidencia.','Correlación no es causa.','Vuelve a la pista y corrige el límite.']
+    :QUIP_BAD;
+  cards.forEach(c=>{c.querySelectorAll('.quip').forEach(n=>n.remove());const ok=c.classList.contains('ok');c.append(h('div',{class:'quip '+(ok?'y':'n')},pickOne(ok?okL:badL)));});
+}
 function veredicto(n){
+  if(isRed()){
+    if(n>=18)return['Listo','Lectura crítica sólida','Separas dato, inferencia y tesis. Repasa solo por gusto.'];
+    if(n>=15)return['Bien','Muy buen nivel','Afina los temas marcados. El resumen alcanza para el cierre.'];
+    if(n>=11)return['Casi','Vas justita','Suele fallar el límite de la inferencia. Vuelve a los temas en rojo.'];
+    if(n>=7)return['Ojo','Falta jerarquía','Relee idea principal, tesis y macrorreglas antes de repetir.'];
+    return['Otra vez','Todavía no cierra','Empieza por el resumen del tema más bajo.'];
+  }
   if(n>=18)return['🏆','¡Eres Mendel reencarnado!','Tu núcleo está en modo genio. Solo repasa por gusto.'];
   if(n>=15)return['🔥','¡Muy buen nivel!','Tus ribosomas fabrican respuestas correctas. Pule los temas en rojo y listo.'];
   if(n>=11)return['😅','Pasaste… raspando','Tu mitocondria pide más café ☕. Repasa los temas marcados y vuelve a intentarlo.'];
@@ -399,14 +478,18 @@ function balanced(temas,key,n){
 }
 function viewSimulacro(){
   const root=h('div',{class:'t3'});
-  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Para el examen'),h('h1',{},'Examen general'),h('p',{},'Preguntas de todos los temas, con completar, marcar, verdadero o falso y casos científicos. Cada intento mezcla otras preguntas y otros casos, al azar. Al final recibes tu nota sobre 20 y los temas que debes repasar. Pobre que falles mardita :b')));
-  const generalBtn=h('button',{class:'btn tc',type:'button',onclick:()=>build(TEMAS,{c:12,m:15,v:15,k:3},'Examen general completo')},'Empezar examen general');
-  const cfg=h('div',{class:'card cfg'},h('h3',{},'Simulacro por temas'),h('p',{class:'muted'},'Elige qué temas incluir: 8 de completar, 10 de marcar, 10 de V/F y 2 casos. También salen al azar y cambian si lo repites.'));
-  const checks=TEMAS.map(t=>{const c=h('input',{type:'checkbox',checked:true});cfg.append(h('label',{},c,`Tema ${t.id}: ${t.titulo}`));return{c,t};});
+  const pieza=isRed()?'análisis de textos':'casos científicos';
+  const simKey=(isRed()?'r':'b')+'sim';
+  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Para el examen'),h('h1',{},'Examen general'),h('p',{},isRed()
+    ?'Preguntas de las 7 sesiones: completar, marcar, verdadero o falso y análisis de un fragmento. Cada intento cambia. Al final, nota sobre 20 y los temas que debes repasar.'
+    :'Preguntas de todos los temas, con completar, marcar, verdadero o falso y casos científicos. Cada intento mezcla otras preguntas y otros casos, al azar. Al final recibes tu nota sobre 20 y los temas que debes repasar. Pobre que falles mardita :b')));
+  const generalBtn=h('button',{class:'btn tc',type:'button',onclick:()=>build(CURRENT_TEMAS,{c:12,m:15,v:15,k:3},'Examen general completo')},'Empezar examen general');
+  const cfg=h('div',{class:'card cfg'},h('h3',{},'Simulacro por temas'),h('p',{class:'muted'},'Elige qué temas incluir: 8 de completar, 10 de marcar, 10 de V/F y 2 análisis. También salen al azar y cambian si lo repites.'));
+  const checks=CURRENT_TEMAS.map(t=>{const c=h('input',{type:'checkbox',checked:true});cfg.append(h('label',{},c,`Tema ${t.id}: ${t.titulo}`));return{c,t};});
   cfg.append(h('div',{class:'row',style:'margin-top:12px'},h('button',{class:'btn alt',type:'button',onclick:()=>{const sel=checks.filter(x=>x.c.checked).map(x=>x.t);if(!sel.length){alert('Elige al menos un tema.');return;}build(sel,{c:8,m:10,v:10,k:2},'Simulacro por temas');}},'Empezar simulacro')));
-  const best=P.best.sim!=null?h('p',{class:'muted',style:'margin:8px 0 0'},'Tu mejor nota: '+fmt(P.best.sim/5)+' / 20'):null;
+  const best=P.best[simKey]!=null?h('p',{class:'muted',style:'margin:8px 0 0'},'Tu mejor nota: '+fmt(P.best[simKey]/5)+' / 20'):null;
   root.append(h('div',{class:'bigrow',style:'margin-top:0'},
-    h('div',{class:'card'},h('h3',{},'Examen general completo'),h('p',{},'Los 7 temas repartidos parejo: 12 para completar, 15 para marcar, 15 de verdadero o falso y 3 casos científicos de temas distintos. Cada intento cambia las preguntas y los casos. Toma tiempo: ¡ponte cómoda!'),generalBtn,best),
+    h('div',{class:'card'},h('h3',{},'Examen general completo'),h('p',{},'Los 7 temas repartidos parejo: 12 para completar, 15 para marcar, 15 de verdadero o falso y 3 '+pieza+' de temas distintos. Cada intento cambia. Toma su tiempo.'),generalBtn,best),
     cfg));
   const area=h('div',{style:'margin-top:24px'});root.append(area);
   setView(root,'Examen general');
@@ -438,11 +521,11 @@ function viewSimulacro(){
         h('div',{class:'score'},v[0]+' '+fmt(nota)+' / 20'),
         h('div',{},h('b',{},v[1]+' '),v[2]),
         h('p',{style:'margin:10px 0 4px'},`Completar: ${a.ok}/${a.total} · Marcar: ${b.ok}/${b.total} · V/F: ${c.ok}/${c.total}`+(covs.length?` · Casos: ${covs.map(x=>x+'%').join(' · ')}`:'')+` · Tiempo: ${timer.textContent}`),
-        h('div',{class:'row',style:'gap:8px;margin-top:6px'},rows.map(r=>h('a',{class:'chip '+(r.p<70?'weak':''),href:'#/tema/'+r.id,title:'Ir al tema '+r.id},`Tema ${r.id}: ${r.p}%${r.p<70?' · repasar':' ✓'}`))),
+        h('div',{class:'row',style:'gap:8px;margin-top:6px'},rows.map(r=>h('a',{class:'chip '+(r.p<70?'weak':''),href:go('tema/'+r.id),title:'Ir al tema '+r.id},`Tema ${r.id}: ${r.p}%${r.p<70?' · repasar':' ✓'}`))),
         h('p',{class:'muted',style:'margin:10px 0 0;font-size:.85rem'},'Nota = 75 % preguntas cerradas + 25 % casos' + (covs.length?'':' (sin casos)')+'. En los casos el programa solo busca palabras clave: compara con la solución.'));
       result.classList.add('show');result.scrollIntoView({behavior:'smooth',block:'center'});
       cb.forEach(x=>x.showSol());
-      record('sim',Math.round(nota*5));
+      record(simKey,Math.round(nota*5));
       if(nota>=15)confetti();
       fin.textContent='Volver a calificar';
     }},'Terminar y calificar');
@@ -450,7 +533,7 @@ function viewSimulacro(){
       h('h3',{style:'margin-top:20px'},'I. Completa las palabras'),A.el,
       h('h3',{style:'margin-top:28px'},'II. Marca la alternativa correcta'),B.el,
       h('h3',{style:'margin-top:28px'},'III. Verdadero o falso'),D.el,
-      cb.length?h('h3',{style:'margin-top:28px'},'IV. Casos científicos'):null,...cb.map(x=>x.el),
+      cb.length?h('h3',{style:'margin-top:28px'},isRed()?'IV. Análisis de textos':'IV. Casos científicos'):null,...cb.map(x=>x.el),
       result,h('div',{class:'sticky-act'},h('button',{class:'btn alt',type:'button',onclick:()=>build(sel,n,label)},'🔀 Nuevo examen'),fin));
     area.scrollIntoView({behavior:'smooth'});
   }
@@ -458,22 +541,58 @@ function viewSimulacro(){
 
 /* ───────── Navegación ───────── */
 function buildSide(){
-  const box=$('#sideTemas');box.innerHTML='';
-  TEMAS.forEach(t=>box.append(h('a',{class:'side-link '+themeClass(t),href:'#/tema/'+t.id,'data-route':'tema'+t.id},h('span',{class:'pill'},t.id),h('span',{},t.titulo),h('span',{class:'mini'},temaPct(t)+'%'))));
+  const box=$('#sideTemas'); if(!box) return; box.innerHTML='';
+  if(!CURRENT_TYPE) return;
+  CURRENT_TEMAS.forEach(t=>box.append(h('a',{class:'side-link '+themeClass(t),href:go('tema/'+t.id)},h('span',{class:'pill'},t.id),h('span',{},t.titulo),h('span',{class:'mini'},temaPct(t)+'%'))));
+  box.append(h('p',{class:'side-title'},'Práctica'));
+  box.append(h('a',{class:'side-link',href:go('simulacro')},'Examen general'));
+  box.append(h('a',{class:'side-link',href:go('casos')},isRed()?'Cómo analizar':'Cómo resolver casos'));
+  box.append(h('a',{class:'side-link',href:go('chuleta')},'Resumen para imprimir'));
+}
+function viewChuleta(){
+  const root=h('div');
+  setView(root,'Chuleta');
+  if(window.mountChuleta) window.mountChuleta(root,CURRENT_TYPE);
+  else root.textContent='No se pudo armar el resumen.';
 }
 function route(){
-  document.body.classList.remove('menu-open');$('#menuBtn').setAttribute('aria-expanded','false');
-  const parts=(location.hash.replace(/^#\/?/,'')||'').split('/');
+  document.body.classList.remove('menu-open');
+  const menuBtn=$('#menuBtn'); if(menuBtn) menuBtn.setAttribute('aria-expanded','false');
+  const parts=(location.hash.replace(/^#\/?/,'')||'').split('/').filter(Boolean);
+  if(parts[0]==='tema'||parts[0]==='casos'||parts[0]==='simulacro'||parts[0]==='chuleta'){
+    location.replace('#/biologia/'+parts.join('/'));
+    return;
+  }
+  if(parts[0]==='biologia'||parts[0]==='redaccion'){
+    setCourse(parts[0]);
+    buildSide();
+    const sub=parts[1];
+    if(sub==='tema') return viewTema(+parts[2],parts[3]);
+    if(sub==='casos') return viewCasos();
+    if(sub==='simulacro') return viewSimulacro();
+    if(sub==='chuleta') return viewChuleta();
+    return isRed()?viewRedaccionHome():viewBiologiaHome();
+  }
+  CURRENT_TYPE='';
+  CURRENT_TEMAS=[];
   buildSide();
-  let key='home';
-  if(parts[0]==='tema'){const id=+parts[1];key='tema'+id;viewTema(id,parts[2]);}
-  else if(parts[0]==='casos'){key='casos';viewCasos();}
-  else if(parts[0]==='simulacro'){key='simulacro';viewSimulacro();}
-  else viewHome();
-  document.querySelectorAll('.side-link').forEach(a=>a.classList.toggle('on',a.dataset.route===key));
+  viewHome();
 }
-$('#menuBtn').addEventListener('click',()=>{const o=document.body.classList.toggle('menu-open');$('#menuBtn').setAttribute('aria-expanded',o);});
-$('#scrim').addEventListener('click',()=>document.body.classList.remove('menu-open'));
-window.addEventListener('hashchange',route);
-updateXP();route();
+function boot(){
+  const btn=$('#menuBtn');
+  if(btn&&!btn.dataset.wired){
+    btn.dataset.wired='1';
+    btn.addEventListener('click',()=>{const o=document.body.classList.toggle('menu-open');btn.setAttribute('aria-expanded',o?'true':'false');});
+    const scrim=$('#scrim');
+    if(scrim) scrim.addEventListener('click',()=>{document.body.classList.remove('menu-open');btn.setAttribute('aria-expanded','false');});
+  }
+  if(!window.__ESTUDIO_HASH){
+    window.addEventListener('hashchange',route);
+    window.__ESTUDIO_HASH=true;
+  }
+  updateXP();
+  route();
+}
+window.__ESTUDIO_BOOT=boot;
+boot();
 })();

@@ -1,6 +1,6 @@
-# Biología general · Guía de estudio
+# Estudios Giu · Guía de estudio (Biología + Redacción)
 
-Sitio estático (HTML + CSS + JavaScript puro). No necesita instalar nada ni servidor.
+Sitio estático (HTML + CSS + JavaScript puro, localStorage). No necesita instalar nada ni servidor.
 
 ## Cómo usarlo
 - **Local:** abre `index.html` con doble clic (funciona sin internet; solo las tipografías de Google Fonts requieren conexión y, si faltan, se usan tipografías del sistema).
@@ -9,18 +9,31 @@ Sitio estático (HTML + CSS + JavaScript puro). No necesita instalar nada ni ser
   - **GitHub Pages:** sube la carpeta a un repositorio → Settings → Pages → Branch `main` / root.
   - **Vercel / Cloudflare Pages:** importa el repositorio, sin comando de build y con la raíz como carpeta de salida.
 
+## Rutas (hash, sin servidor)
+- `#/` → selector de curso (2 cards: Biología / Redacción)
+- `#/biologia` → home de Biología · `#/redaccion` → home de Redacción
+- `#/biologia/tema/1` · `#/redaccion/tema/3/tarjetas`, etc.
+- `#/biologia/simulacro` · `#/redaccion/simulacro` (examen general por curso)
+- `#/biologia/casos` · `#/redaccion/casos` (guía de método por curso)
+- `#/biologia/chuleta` · `#/redaccion/chuleta` (resumen imprimible por curso, A4 → PDF)
+
+URLs viejas (`#/tema/1`, `#/casos`…) redirigen solas a `#/biologia/…`.
+
 ## Estructura
-- `index.html` — página única (la navegación usa `#/…`, así no hace falta configurar rutas en el servidor).
-- `css/styles.css` — estilos.
-- `js/app.js` — navegación, actividades (completar, marcar, V/F, ordenar, relacionar), casos y simulacro.
+- `index.html` — página única + carga de datos en orden (guía → temas → banco → redacción → widgets → chuleta → app).
+- `css/styles.css` — estilos (incluye `.courses` / `.course` del selector).
+- `js/app.js` — router por curso, actividades (completar, marcar, V/F, ordenar, relacionar), casos/análisis, simulacro. Progreso separado por curso (`b`/`r`) en localStorage.
 - `js/widgets.js` — célula que se divide, célula interactiva, rueda del ciclo celular, ADN→proteína, cuadro de Punnett.
-- `js/data/temaN.js` — contenido de cada tema. **Aquí se edita o se añade contenido.**
-- `js/data/guia.js` — guía de resolución de casos y caso modelo.
+- `js/chuleta.js` — `mountChuleta(root, curso)`: imprime BIO o RED según el curso activo.
+- `js/data/guia.js` — `window.GUIA` (biología) + `window.TEMAS`.
+- `js/data/temaN.js` — contenido de cada tema de biología (1–7).
+- `js/data/banco-extra.js` — preguntas/casos extra + fija `window.BIOLOGIA_TEMAS`.
+- `js/data/redaccion/temas.js` — 7 sesiones de Redacción (Unidad I: Información y argumentos) + `window.GUIA_RED`.
 
 ## Cómo añadir preguntas
-Abre `js/data/temaN.js` y copia el formato de las existentes:
-- Completar: `'La {{mitosis}} produce dos células.'` (alternativas válidas con `|`: `{{fecundación|fecundacion}}`).
-- Marcar: `{q:'…', o:['a','b','c','d'], a:1, why:'explicación'}` (`a` = posición de la correcta, empezando en 0).
+Abre `js/data/temaN.js` (o `js/data/redaccion/temas.js`) y copia el formato:
+- Completar: `'La {{mitosis}} produce dos células.'` (alternativas con `|`: `{{fecundación|fecundacion}}`).
+- Marcar: `{q:'…', o:['a','b','c','d'], a:1, why:'explicación'}` (`a` = posición de la correcta, desde 0).
 - V/F: `{q:'…', a:true, why:'…'}`.
 
-El progreso se guarda en el navegador de quien lo usa (localStorage).
+El progreso se guarda en el navegador (localStorage, clave `bf_progress_v1`), separado por curso para no cruzar Biología y Redacción.

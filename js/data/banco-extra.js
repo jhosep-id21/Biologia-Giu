@@ -920,3 +920,5 @@
     ],
   });
 })();
+
+window.BIOLOGIA_TEMAS = (window.TEMAS || []).slice();

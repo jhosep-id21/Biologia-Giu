@@ -259,3 +259,18 @@ mark.clue.open{background:var(--tc);color:#fff}
 .quip.y{background:var(--ok-bg)}.quip.n{background:var(--bad-bg)}
 .chip.weak{background:#FF9AA2}
 a.chip{text-decoration:none}
+
+.courses{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.course{display:flex;flex-direction:column;gap:10px;text-decoration:none;background:var(--card);border:2px solid var(--line);border-radius:24px;padding:22px;box-shadow:5px 5px 0 var(--shadow);min-height:280px;transition:transform .1s,box-shadow .1s}
+.course:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--shadow)}
+.course .kicker{font:800 .78rem var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--tc)}
+.course h2{font-size:clamp(1.7rem,3vw,2.1rem);margin:0}
+.course p{color:var(--muted);margin:0}
+.course .meta{display:flex;flex-wrap:wrap;gap:8px}
+.pilltag{font-size:.78rem;font-weight:700;border:1.5px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--tc-soft)}
+.course .go{margin-top:auto;font-weight:800}
+.text-diagram{display:flex;flex-direction:column;gap:10px}
+.mini-line{border:2px solid var(--line);border-radius:14px;padding:12px 14px;font-weight:700;background:var(--soft)}
+.mini-line small{display:block;font-weight:500;color:var(--muted)}
+.courses>div{display:flex}
+.courses .course{flex:1;width:100%}
