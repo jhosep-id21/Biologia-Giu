@@ -273,4 +273,9 @@ a.chip{text-decoration:none}
 .mini-line{border:2px solid var(--line);border-radius:14px;padding:12px 14px;font-weight:700;background:var(--soft)}
 .mini-line small{display:block;font-weight:500;color:var(--muted)}
 .courses>div{display:flex}
-.courses .course{flex:1;width:100%}
+.courses .course{flex:1;width:100}
+
+/* ───────── Figuras en resúmenes ───────── */
+.fig{margin:12px 0 4px;border:2px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card)}
+.fig img{display:block;width:100%;height:auto}
+.fig figcaption{padding:8px 12px;font-size:.85rem;color:var(--muted);border-top:2px solid var(--line);background:var(--soft)}

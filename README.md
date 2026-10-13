@@ -1,4 +1,4 @@
-# Estudios Giu · Guía de estudio (Biología + Redacción)
+# Estudios Giu · Guía de estudio (Biología + Redacción + Teorías pedagógicas)
 
 Sitio estático (HTML + CSS + JavaScript puro, localStorage). No necesita instalar nada ni servidor.
 
@@ -10,12 +10,12 @@ Sitio estático (HTML + CSS + JavaScript puro, localStorage). No necesita instal
   - **Vercel / Cloudflare Pages:** importa el repositorio, sin comando de build y con la raíz como carpeta de salida.
 
 ## Rutas (hash, sin servidor)
-- `#/` → selector de curso (2 cards: Biología / Redacción)
-- `#/biologia` → home de Biología · `#/redaccion` → home de Redacción
+- `#/` → selector de curso (3 cards: Biología / Redacción / Teorías)
+- `#/biologia` → home de Biología · `#/redaccion` → home de Redacción · `#/teoria` → home de Teorías
 - `#/biologia/tema/1` · `#/redaccion/tema/3/tarjetas`, etc.
 - `#/biologia/simulacro` · `#/redaccion/simulacro` (examen general por curso)
 - `#/biologia/casos` · `#/redaccion/casos` (guía de método por curso)
-- `#/biologia/chuleta` · `#/redaccion/chuleta` (resumen imprimible por curso, A4 → PDF)
+- `#/biologia/chuleta` · `#/redaccion/chuleta` · `#/teoria/chuleta` (resumen imprimible por curso, A4 → PDF)
 
 URLs viejas (`#/tema/1`, `#/casos`…) redirigen solas a `#/biologia/…`.
 
@@ -24,11 +24,12 @@ URLs viejas (`#/tema/1`, `#/casos`…) redirigen solas a `#/biologia/…`.
 - `css/styles.css` — estilos (incluye `.courses` / `.course` del selector).
 - `js/app.js` — router por curso, actividades (completar, marcar, V/F, ordenar, relacionar), casos/análisis, simulacro. Progreso separado por curso (`b`/`r`) en localStorage.
 - `js/widgets.js` — célula que se divide, célula interactiva, rueda del ciclo celular, ADN→proteína, cuadro de Punnett.
-- `js/chuleta.js` — `mountChuleta(root, curso)`: imprime BIO o RED según el curso activo.
+- `js/chuleta.js` — `mountChuleta(root, curso)`: imprime BIO, RED o TEO según el curso activo.
 - `js/data/guia.js` — `window.GUIA` (biología) + `window.TEMAS`.
 - `js/data/temaN.js` — contenido de cada tema de biología (1–7).
 - `js/data/banco-extra.js` — preguntas/casos extra + fija `window.BIOLOGIA_TEMAS`.
 - `js/data/redaccion/temas.js` — 7 sesiones de Redacción (Unidad I: Información y argumentos) + `window.GUIA_RED`.
+- `js/data/teoria/temas.js` — 7 sesiones de Teorías y enfoques pedagógicos (UCT Inicial) + `window.GUIA_TEORIA`.
 
 ## Cómo añadir preguntas
 Abre `js/data/temaN.js` (o `js/data/redaccion/temas.js`) y copia el formato:

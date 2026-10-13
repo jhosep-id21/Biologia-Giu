@@ -110,6 +110,53 @@
     ],
   };
 
+  const TEO = {
+    title: "Teorías y enfoques pedagógicos · Sesiones 1 a 7",
+    sub: "UCT · Educación Inicial",
+    trickTitle: "Para no mezclar teorías",
+    sections: [
+      { n: 1, c: "#0E9F8E", t: "El curso y el rol", l: [
+        "<b>Competencia:</b> analizar y fundamentar teorías de atención integral en primera infancia, con juicio crítico y ética.",
+        "<b>Foro:</b> saberes, dificultades y meta concreta. <b>Cierre:</b> ¿qué? ¿cómo? ¿para qué me sirve?",
+        "<b>Paradojas:</b> autonomía vs control, inclusión vs masividad, juego vs resultados.",
+      ]},
+      { n: 2, c: "#6B4EFF", t: "Historia de la pedagogía", l: [
+        "<b>Antigüedad:</b> paideia, mayéutica socrática. <b>Ilustración:</b> Comenio (todo a todos), Rousseau, Pestalozzi.",
+        "<b>Escuela Nueva:</b> Montessori (ambiente), Decroly (centros de interés), Freinet, Dewey (aprender haciendo).",
+        "<b>Hoy:</b> constructivismo, crítica, DUA e inclusión; docente mediador.",
+      ]},
+      { n: 3, c: "#2F80ED", t: "Bases conductistas", l: [
+        "<b>Objeto:</b> conducta observable. Base: positivismo + empirismo.",
+        "<b>Pavlov:</b> clásico EN+EI→EC→RC. <b>Watson:</b> Albert. <b>Thorndike:</b> ley del efecto. <b>Skinner:</b> operante R-consecuencia.",
+      ]},
+      { n: 4, c: "#E63E8B", t: "Principios conductistas", l: [
+        "<b>Refuerzo +:</b> añade agradable. <b>Refuerzo −:</b> quita molesto. <b>Castigo +:</b> añade molesto. <b>Castigo −:</b> quita agradable.",
+        "<b>Extinción</b> (con estallido), <b>generalización</b> y <b>discriminación</b>.",
+        "<b>ABC:</b> antecedente, conducta y consecuencia. Ojo a la trampa del refuerzo negativo.",
+      ]},
+      { n: 5, c: "#F08A24", t: "Conductismo en aula y ética", l: [
+        "<b>Aporta:</b> rutinas, hábitos y claridad. Técnicas: fichas, contrato, tiempo fuera, semáforo.",
+        "<b>Límites:</b> reduccionismo, motivación extrínseca, control externo.",
+        "<b>Ética:</b> no exponer ni humillar; reparar y enseñar la rutina.",
+      ]},
+      { n: 6, c: "#3FA34D", t: "Teoría cognitiva", l: [
+        "<b>Flujo:</b> sensorial → trabajo → largo plazo. <b>Atención:</b> filtro limitado en 4 años.",
+        "<b>Memoria trabajo</b> (Baddeley): pocos elementos. <b>MLP:</b> organización y recupero espaciado.",
+        "<b>Representación:</b> acción e imagen antes que palabra. <b>Metacognición:</b> planificar, monitorear, evaluar.",
+      ]},
+      { n: 7, c: "#D9A400", t: "Piaget, Bruner, Ausubel", l: [
+        "<b>Piaget:</b> asimilación-acomodación; preoperacional (2-7) con juego simbólico.",
+        "<b>Bruner:</b> descubrimiento guiado, andamiaje, espiral.",
+        "<b>Ausubel:</b> saberes previos + organizador + actitud = significativo.",
+      ]},
+    ],
+    tricks: [
+      "<b>No confundas:</b> clásico (E-E) / operante (R-consecuencia) · refuerzo (suma) / castigo (resta) · generalización / discriminación.",
+      "<b>Límites:</b> correlación ≠ causa aquí es anécdota ≠ todos · la conclusión no estrena temas · exponer no es regular.",
+      "<b>Caso en 4 pasos:</b> teoría → pista → mecanismo → valoración y propuesta.",
+    ],
+  };
+
   const css = `
 #chu{--cols:2;--fs:9.5pt}
 .chu-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 16px}
@@ -144,7 +191,7 @@
   }
 
   window.mountChuleta = function (root, course) {
-    const pack = course === "redaccion" ? RED : BIO;
+    const pack = course === "redaccion" ? RED : course === "teoria" ? TEO : BIO;
     const secs = pack.sections
       .map(
         (x) =>

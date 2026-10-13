@@ -5,12 +5,13 @@ const $=(s,r=document)=>r.querySelector(s);
 let CURRENT_TEMAS = [];
 let CURRENT_TYPE = '';
 function isRed(){return CURRENT_TYPE==='redaccion';}
+function isTeo(){return CURRENT_TYPE==='teoria';}
 function setCourse(type){
   CURRENT_TYPE=type;
-  const src=type==='redaccion'?window.REDACCION_TEMAS:window.BIOLOGIA_TEMAS;
+  const src=type==='redaccion'?window.REDACCION_TEMAS:type==='teoria'?window.TEORIA_TEMAS:window.BIOLOGIA_TEMAS;
   CURRENT_TEMAS=(src||[]).slice().sort((a,b)=>a.id-b.id);
 }
-const cid=t=>(isRed()?'r':'b')+t.id;
+const cid=t=>(isRed()?'r':isTeo()?'t':'b')+t.id;
 const go=p=>'#/'+CURRENT_TYPE+(p?'/'+p:'');
 
 function h(tag,attrs,...kids){const e=document.createElement(tag);for(const k in(attrs||{})){const v=attrs[k];if(v==null||v===false)continue;if(k==='class')e.className=v;else if(k==='html')e.innerHTML=v;else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?'':v);}kids.flat(Infinity).forEach(c=>{if(c==null||c===false)return;e.append(c.nodeType?c:document.createTextNode(c));});return e;}
@@ -192,7 +193,7 @@ function setView(node,title){
   if(!host)return;
   host.innerHTML='';
   host.append(node);
-  const curso=isRed()?'Redacción':CURRENT_TYPE?'Biología general':'Estudios';
+  const curso=isRed()?'Redacción':isTeo()?'Teorías pedagógicas':CURRENT_TYPE?'Biología general':'Estudios';
   document.title=(title?title+' · ':'')+curso;
   window.scrollTo(0,0);
   host.focus({preventScroll:true});
@@ -202,26 +203,37 @@ function themeClass(t){return 't'+t.id;}
 
 function courseHome(kind){
   const bio=kind==='biologia';
+  const red=kind==='redaccion';
   const next=CURRENT_TEMAS.find(t=>temaPct(t)<100)||CURRENT_TEMAS[0];
   const cell=h('div',{class:'hero-cell'});
   if(bio&&window.WIDGETS&&WIDGETS.hero)WIDGETS.hero(cell);
-  else cell.classList.add('text-diagram'),cell.append(
+  else if(red)cell.classList.add('text-diagram'),cell.append(
     h('div',{class:'mini-line'},'Introducción',h('small',{},'Presenta el tema y el propósito')),
     h('div',{class:'mini-line'},'Desarrollo',h('small',{},'Explica, argumenta y ejemplifica')),
     h('div',{class:'mini-line'},'Conclusión',h('small',{},'Integra y cierra, sin ideas nuevas'))
   );
+  else cell.classList.add('text-diagram'),cell.append(
+    h('div',{class:'mini-line'},'Conductismo',h('small',{},'Pavlov, Watson, Thorndike, Skinner')),
+    h('div',{class:'mini-line'},'Cognitivo',h('small',{},'Atención, memoria, metacognición')),
+    h('div',{class:'mini-line'},'Constructivista',h('small',{},'Piaget, Bruner, Ausubel'))
+  );
+  const tag=bio?'Unidad de biología':red?'Unidad I · Información y argumentos':'Sesiones 1 a 7 · UCT Inicial';
+  const title=bio?'Biología general':red?'Redacción y comprensión':'Teorías y enfoques pedagógicos';
+  const lead=bio
+    ?'Los mismos resúmenes, tarjetas, casos y el examen general. Entra a un tema o practica todo junto.'
+    :red
+    ?'Sesiones 1 a 7, resumidas para estudiar: estructura, lectura literal e inferencial, argumentos, ritmo lector y síntesis. Cada tema tiene su examen y hay uno general.'
+    :'Conductismo, cognitivismo y constructivismo para fundamentar tu praxis en inicial. Cada sesión tiene su examen y hay uno general.';
   const hero=h('section',{class:'hero'},
     h('div',{},
-      h('p',{class:'tag'},bio?'Unidad de biología':'Unidad I · Información y argumentos'),
-      h('h1',{},bio?'Biología general':'Redacción y comprensión'),
-      h('p',{class:'lead'},bio
-        ?'Los mismos resúmenes, tarjetas, casos y el examen general. Entra a un tema o practica todo junto.'
-        :'Sesiones 1 a 7, resumidas para estudiar: estructura, lectura literal e inferencial, argumentos, ritmo lector y síntesis. Cada tema tiene su examen y hay uno general.'),
+      h('p',{class:'tag'},tag),
+      h('h1',{},title),
+      h('p',{class:'lead'},lead),
       h('div',{class:'row'},
         next?h('a',{class:'btn',href:go('tema/'+next.id)},'Empezar'):null,
         h('a',{class:'btn alt',href:go('simulacro')},'Examen general'),
         h('a',{class:'btn alt',href:go('chuleta')},'Resumen para imprimir'),
-        h('a',{class:'btn alt',href:go('casos')},bio?'Cómo resolver casos':'Cómo analizar un texto'))),
+        h('a',{class:'btn alt',href:go('casos')},bio?'Cómo resolver casos':red?'Cómo analizar un texto':'Cómo fundamentar un caso'))),
     cell);
   const grid=h('div',{class:'grid'},CURRENT_TEMAS.map(t=>{
     const p=temaPct(t);
@@ -229,10 +241,11 @@ function courseHome(kind){
       h('div',{class:'num'},t.id),h('h3',{},t.titulo),h('p',{},t.corto),
       h('div',{class:'pct'},p+'% del tema'));
   }));
-  setView(h('div',{},hero,h('h2',{},'Temas'),grid),bio?'Biología':'Redacción');
+  setView(h('div',{},hero,h('h2',{},'Temas'),grid),bio?'Biología':red?'Redacción':'Pedagogía');
 }
 function viewBiologiaHome(){courseHome('biologia');}
 function viewRedaccionHome(){courseHome('redaccion');}
+function viewTeoriaHome(){courseHome('teoria');}
 
 function viewHome(){
   const card=(type,kicker,title,text,tags)=>{
@@ -242,7 +255,7 @@ function viewHome(){
       h('p',{},text),
       h('div',{class:'meta'},tags.map(t=>h('span',{class:'pilltag'},t))),
       h('div',{class:'go'},'Entrar al curso →'));
-    return h('div',{class:type==='biologia'?'t1':'t2'},wrap);
+    return h('div',{class:type==='biologia'?'t1':type==='redaccion'?'t2':'t3'},wrap);
   };
   setView(h('div',{class:'picker'},
     h('p',{class:'tag'},'Estudia cachuda'),
@@ -250,7 +263,8 @@ function viewHome(){
     h('p',{class:'lead'},'Ojalá jales, okno, mis mejores deseos.'),
     h('div',{class:'courses'},
       card('biologia','Ciencias','Biología general','Célula, metabolismo, herencia, reproducción y los casos científicos que ya practicabas.',['7 temas','Casos','Examen','Resumen']),
-      card('redaccion','Humanidades','Redacción','Comprensión de textos de la Unidad I: ideas, inferencias, argumentos, lectura eficiente y síntesis.',['7 sesiones','Análisis','Examen','Resumen'])
+      card('redaccion','Humanidades','Redacción','Comprensión de textos de la Unidad I: ideas, inferencias, argumentos, lectura eficiente y síntesis.',['7 sesiones','Análisis','Examen','Resumen']),
+      card('teoria','Pedagogía','Teorías y enfoques pedagógicos','Conductismo, cognitivismo y constructivismo (Piaget, Bruner, Ausubel) para inicial.',['7 sesiones','Casos','Examen','Resumen'])
     )
   ),'Inicio');
 }
@@ -368,7 +382,7 @@ function casosTemaView(t){
   if(!cs.length)return h('p',{},'Este tema no tiene casos todavía.');
   const list=()=>{
     root.innerHTML='';
-    root.append(h('div',{class:'card',style:'margin-bottom:18px'},h('p',{style:'margin:0'},'¿No sabes cómo empezar? Mira primero la ',h('a',{href:go('casos')},isRed()?'guía para analizar un texto':'guía de 4 pasos'),'. Luego escribe tu respuesta, comprueba qué ideas te faltaron y mira la solución.')));
+    root.append(h('div',{class:'card',style:'margin-bottom:18px'},h('p',{style:'margin:0'},'¿No sabes cómo empezar? Mira primero la ',h('a',{href:go('casos')},isRed()?'guía para analizar un texto':isTeo()?'guía para fundamentar': 'guía de 4 pasos'),'. Luego escribe tu respuesta, comprueba qué ideas te faltaron y mira la solución.')));
     cs.forEach((c,i)=>{
       const b=P.cases[cid(t)+':'+c.id];
       root.append(h('button',{class:'act',type:'button',style:'width:100%;margin-bottom:14px',onclick:()=>open(c)},h('span',{class:'e'},'🔬'),h('b',{},`Caso ${i+1}: ${c.titulo}`),h('span',{},c.resumen||''),b!=null?h('span',{class:'best'},'Mejor cobertura: '+b+'%'):null));
@@ -397,14 +411,19 @@ function viewTema(id,tab){
 
 /* ───────── Guía de casos ───────── */
 function viewCasos(){
-  const g=isRed()?(window.GUIA_RED||GUIA):GUIA,m=g.modelo;
+  const g=isRed()?(window.GUIA_RED||window.GUIA):isTeo()?(window.GUIA_TEORIA||window.GUIA):window.GUIA,m=g.modelo;
   const root=h('div',{class:'t7'});
+  const big=isRed()?'Análisis de textos':isTeo()?'Casos pedagógicos':'Casos científicos';
+  const h1=isRed()?'Cómo analizar un texto':isTeo()?'Cómo fundamentar un caso pedagógico':'Cómo resolver un caso científico';
+  const intro=isRed()
+    ?'Te van a dar un fragmento. Tienes que decir qué sostiene, citar la pista y no afirmar de más. Con estos 4 pasos sabes por dónde empezar.'
+    :isTeo()
+    ?'Te van a dar una situación de aula de inicial. Tienes que nombrar la teoría, citar la pista, explicar el mecanismo y valorar con ética. Con estos 4 pasos sabes por dónde empezar.'
+    :'En el examen te darán una situación y tendrás que explicarla con los conceptos de clase. Con este método de 4 pasos siempre sabrás por dónde empezar.';
   root.append(h('div',{class:'thead light-text'},
-    h('div',{class:'big'},isRed()?'Análisis de textos':'Casos científicos'),
-    h('h1',{},isRed()?'Cómo analizar un texto':'Cómo resolver un caso científico'),
-    h('p',{},isRed()
-      ?'Te van a dar un fragmento. Tienes que decir qué sostiene, citar la pista y no afirmar de más. Con estos 4 pasos sabes por dónde empezar.'
-      :'En el examen te darán una situación y tendrás que explicarla con los conceptos de clase. Con este método de 4 pasos siempre sabrás por dónde empezar.')));
+    h('div',{class:'big'},big),
+    h('h1',{},h1),
+    h('p',{},intro)));
   // tipos de pregunta
   root.append(h('h2',{},'Antes: trucos para los otros tipos de pregunta'),
     h('div',{class:'tipcards'},g.trucos.map(x=>h('div',{class:'card'},h('h4',{},x[0]),h('p',{html:x[1]})))));
@@ -412,7 +431,7 @@ function viewCasos(){
   root.append(h('h2',{style:'margin-top:28px'},'El método de 4 pasos'),
     h('div',{class:'steps'},g.metodo.map((p,i)=>h('div',{class:'stp'},h('div',{class:'n'},i+1),h('div',{},h('h4',{},p[0]),h('p',{html:p[1]}))))));
   // caso modelo
-  root.append(h('h2',{style:'margin-top:32px'},isRed()?'Texto modelo':'Caso modelo: el que te dieron'));
+  root.append(h('h2',{style:'margin-top:32px'},isRed()?'Texto modelo':isTeo()?'Caso modelo':'Caso modelo: el que te dieron'));
   const sit=h('div',{class:'sit'});
   const notes=h('div',{});
   m.situacion.forEach(seg=>{
@@ -449,13 +468,24 @@ const pickOne=a=>a[Math.floor(Math.random()*a.length)];
 function addQuips(cards){
   const okL=isRed()
     ?['Esa idea sí estaba en el texto.','Inferencia con pista: así se hace.','Separaste el tema de la tesis.','No te pasaste de lo que el texto permite.','Respuesta limpia, sin inventar causas.']
+    :isTeo()
+    ?['Teoría bien ubicada.','Pista citada, así se fundamenta.','Mecanismo explicado con precisión.','Valoraste con ética, no solo describiste.','Propuesta contextualizada para inicial.']
     :QUIP_OK;
   const badL=isRed()
     ?['Eso se fue de lo que el texto dice.','Se cruzaron el tema y la tesis.','Faltó la evidencia.','Correlación no es causa.','Vuelve a la pista y corrige el límite.']
+    :isTeo()
+    ?['Se mezclaron las teorías.','Faltó la pista textual.','Confundiste refuerzo con castigo.','Faltó la valoración ética.','Vuelve al mecanismo y a la propuesta.']
     :QUIP_BAD;
   cards.forEach(c=>{c.querySelectorAll('.quip').forEach(n=>n.remove());const ok=c.classList.contains('ok');c.append(h('div',{class:'quip '+(ok?'y':'n')},pickOne(ok?okL:badL)));});
 }
 function veredicto(n){
+  if(isTeo()){
+    if(n>=18)return['Lista','Fundamentación sólida','Ubicas teoría, pista y mecanismo. Repasa solo por gusto.'];
+    if(n>=15)return['Bien','Muy buen nivel','Afina los temas marcados. La chuleta alcanza para el cierre.'];
+    if(n>=11)return['Casi','Vas justita','Suele fallar refuerzo vs castigo o el límite ético. Vuelve a los temas en rojo.'];
+    if(n>=7)return['Ojo','Falta teoría','Relee conductismo, ABC y Piaget-Bruner-Ausubel antes de repetir.'];
+    return['Otra vez','Todavía no cierra','Empieza por el resumen del tema más bajo.'];
+  }
   if(isRed()){
     if(n>=18)return['Listo','Lectura crítica sólida','Separas dato, inferencia y tesis. Repasa solo por gusto.'];
     if(n>=15)return['Bien','Muy buen nivel','Afina los temas marcados. El resumen alcanza para el cierre.'];
@@ -478,11 +508,14 @@ function balanced(temas,key,n){
 }
 function viewSimulacro(){
   const root=h('div',{class:'t3'});
-  const pieza=isRed()?'análisis de textos':'casos científicos';
-  const simKey=(isRed()?'r':'b')+'sim';
-  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Para el examen'),h('h1',{},'Examen general'),h('p',{},isRed()
+  const pieza=isRed()?'análisis de textos':isTeo()?'casos pedagógicos':'casos científicos';
+  const simKey=(isRed()?'r':isTeo()?'t':'b')+'sim';
+  const intro=isRed()
     ?'Preguntas de las 7 sesiones: completar, marcar, verdadero o falso y análisis de un fragmento. Cada intento cambia. Al final, nota sobre 20 y los temas que debes repasar.'
-    :'Preguntas de todos los temas, con completar, marcar, verdadero o falso y casos científicos. Cada intento mezcla otras preguntas y otros casos, al azar. Al final recibes tu nota sobre 20 y los temas que debes repasar. Pobre que falles mardita :b')));
+    :isTeo()
+    ?'Preguntas de las 7 sesiones: completar, marcar, verdadero o falso y casos de aula de inicial. Cada intento cambia. Al final, nota sobre 20 y los temas que debes repasar.'
+    :'Preguntas de todos los temas, con completar, marcar, verdadero o falso y casos científicos. Cada intento mezcla otras preguntas y otros casos, al azar. Al final recibes tu nota sobre 20 y los temas que debes repasar. Pobre que falles mardita :b';
+  root.append(h('div',{class:'thead'},h('div',{class:'big'},'Para el examen'),h('h1',{},'Examen general'),h('p',{},intro)));
   const generalBtn=h('button',{class:'btn tc',type:'button',onclick:()=>build(CURRENT_TEMAS,{c:12,m:15,v:15,k:3},'Examen general completo')},'Empezar examen general');
   const cfg=h('div',{class:'card cfg'},h('h3',{},'Simulacro por temas'),h('p',{class:'muted'},'Elige qué temas incluir: 8 de completar, 10 de marcar, 10 de V/F y 2 análisis. También salen al azar y cambian si lo repites.'));
   const checks=CURRENT_TEMAS.map(t=>{const c=h('input',{type:'checkbox',checked:true});cfg.append(h('label',{},c,`Tema ${t.id}: ${t.titulo}`));return{c,t};});
@@ -533,7 +566,7 @@ function viewSimulacro(){
       h('h3',{style:'margin-top:20px'},'I. Completa las palabras'),A.el,
       h('h3',{style:'margin-top:28px'},'II. Marca la alternativa correcta'),B.el,
       h('h3',{style:'margin-top:28px'},'III. Verdadero o falso'),D.el,
-      cb.length?h('h3',{style:'margin-top:28px'},isRed()?'IV. Análisis de textos':'IV. Casos científicos'):null,...cb.map(x=>x.el),
+      cb.length?h('h3',{style:'margin-top:28px'},isRed()?'IV. Análisis de textos':isTeo()?'IV. Casos pedagógicos':'IV. Casos científicos'):null,...cb.map(x=>x.el),
       result,h('div',{class:'sticky-act'},h('button',{class:'btn alt',type:'button',onclick:()=>build(sel,n,label)},'🔀 Nuevo examen'),fin));
     area.scrollIntoView({behavior:'smooth'});
   }
@@ -546,7 +579,7 @@ function buildSide(){
   CURRENT_TEMAS.forEach(t=>box.append(h('a',{class:'side-link '+themeClass(t),href:go('tema/'+t.id)},h('span',{class:'pill'},t.id),h('span',{},t.titulo),h('span',{class:'mini'},temaPct(t)+'%'))));
   box.append(h('p',{class:'side-title'},'Práctica'));
   box.append(h('a',{class:'side-link',href:go('simulacro')},'Examen general'));
-  box.append(h('a',{class:'side-link',href:go('casos')},isRed()?'Cómo analizar':'Cómo resolver casos'));
+  box.append(h('a',{class:'side-link',href:go('casos')},isRed()?'Cómo analizar':isTeo()?'Cómo fundamentar':'Cómo resolver casos'));
   box.append(h('a',{class:'side-link',href:go('chuleta')},'Resumen para imprimir'));
 }
 function viewChuleta(){
@@ -563,7 +596,7 @@ function route(){
     location.replace('#/biologia/'+parts.join('/'));
     return;
   }
-  if(parts[0]==='biologia'||parts[0]==='redaccion'){
+  if(parts[0]==='biologia'||parts[0]==='redaccion'||parts[0]==='teoria'){
     setCourse(parts[0]);
     buildSide();
     const sub=parts[1];
@@ -571,7 +604,7 @@ function route(){
     if(sub==='casos') return viewCasos();
     if(sub==='simulacro') return viewSimulacro();
     if(sub==='chuleta') return viewChuleta();
-    return isRed()?viewRedaccionHome():viewBiologiaHome();
+    return isRed()?viewRedaccionHome():isTeo()?viewTeoriaHome():viewBiologiaHome();
   }
   CURRENT_TYPE='';
   CURRENT_TEMAS=[];
